@@ -59,12 +59,12 @@ func NewConnection(addr, key string) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 
-	config, err := liteclient.GetConfigFromUrl(ctx, "https://tonutils.com/ls/free-mainnet-config.json")
+	c, err := liteclient.GetConfigFromUrl(ctx, "https://tonutils.com/ls/free-mainnet-config.json")
 	if err != nil {
 		return nil, fmt.Errorf("get config err: %v", err.Error())
 	}
 
-	err = client.AddConnectionsFromConfig(ctx, config)
+	err = client.AddConnectionsFromConfig(ctx, c)
 	if err != nil {
 		return nil, fmt.Errorf("connection err: %v", err.Error())
 	}
