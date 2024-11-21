@@ -4,6 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"math/big"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gobicycle/bicycle/core"
 	log "github.com/sirupsen/logrus"
@@ -20,11 +26,6 @@ import (
 	"github.com/xssnick/tonutils-go/ton/jetton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"math"
-	"math/big"
-	"sort"
-	"strings"
-	"time"
 )
 
 type Connection struct {
@@ -37,12 +38,12 @@ func (c *Connection) WaitForBlock(seqno uint32) ton.APIClientWrapped {
 }
 
 func (c *Connection) FindLastTransactionByInMsgHash(ctx context.Context, addr *address.Address, msgHash []byte, maxTxNumToScan ...int) (*tlb.Transaction, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (c *Connection) FindLastTransactionByOutMsgHash(ctx context.Context, addr *address.Address, msgHash []byte, maxTxNumToScan ...int) (*tlb.Transaction, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -54,44 +55,17 @@ type contract struct {
 
 // NewConnection creates new Blockchain connection
 func NewConnection(addr, key string) (*Connection, error) {
-
 	client := liteclient.NewConnectionPool()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 
-	err := client.AddConnection(ctx, addr, key)
+	err := client.AddConnectionsFromConfigUrl(ctx, config.Config.NetworkConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("connection err: %v", err.Error())
 	}
 
-	var wrappedClient ton.APIClientWrapped
+	wrappedClient := ton.NewAPIClient(client).WithRetry()
 
-	if config.Config.ProofCheckEnabled {
-
-		if config.Config.NetworkConfigUrl == "" {
-			return nil, fmt.Errorf("empty network config URL")
-		}
-
-		cfg, err := liteclient.GetConfigFromUrl(ctx, config.Config.NetworkConfigUrl)
-		if err != nil {
-			return nil, fmt.Errorf("get network config from url err: %s", err.Error())
-		}
-
-		wrappedClient = ton.NewAPIClient(client, ton.ProofCheckPolicySecure).WithRetry()
-		wrappedClient.SetTrustedBlockFromConfig(cfg)
-
-		log.Infof("Fetching and checking proofs since config init block ...")
-		_, err = wrappedClient.CurrentMasterchainInfo(ctx) // we fetch block just to trigger chain proof check
-		if err != nil {
-			return nil, fmt.Errorf("get masterchain info err: %s", err.Error())
-		}
-		log.Infof("Proof checks are completed")
-
-	} else {
-		wrappedClient = ton.NewAPIClient(client, ton.ProofCheckPolicyUnsafe).WithRetry()
-	}
-
-	// TODO: replace after tonutils fix
 	rootDNS, bcConfig, err := getConfigData(ctx, wrappedClient)
 	if err != nil {
 		return nil, fmt.Errorf("get config data err: %s", err.Error())
@@ -107,7 +81,6 @@ func NewConnection(addr, key string) (*Connection, error) {
 }
 
 func getConfigData(ctx context.Context, api ton.APIClientWrapped) (*address.Address, *boc.Cell, error) {
-
 	b, err := api.CurrentMasterchainInfo(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get masterchain info: %w", err)
@@ -218,7 +191,6 @@ func (c *Connection) GetJettonBalanceByOwner(
 	owner *address.Address,
 	jettonMaster *address.Address,
 ) (*big.Int, error) {
-
 	jettonMasterClient := jetton.NewJettonMasterClient(c.client, jettonMaster)
 
 	jettonWalletClient, err := jettonMasterClient.GetJettonWallet(ctx, owner)
@@ -233,7 +205,6 @@ func (c *Connection) DnsResolveSmc(
 	ctx context.Context,
 	domainName string,
 ) (*address.Address, error) {
-
 	// TODO: it is necessary to distinguish network errors from the impossibility of resolving
 	domain, err := c.resolver.Resolve(ctx, domainName)
 	if errors.Is(err, dns.ErrNoSuchRecord) {
@@ -254,7 +225,6 @@ func (c *Connection) DnsResolveSmc(
 }
 
 func getWalletRecord(d *dns.Domain) *address.Address {
-
 	// TODO: remove after tonutils fix
 	rec := d.GetRecord("wallet")
 	if rec == nil {
