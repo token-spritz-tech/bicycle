@@ -59,7 +59,7 @@ func NewConnection(addr, key string) (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 
-	c, err := liteclient.GetConfigFromUrl(ctx, "https://tonutils.com/ls/free-mainnet-config.json")
+	c, err := liteclient.GetConfigFromUrl(ctx, "https://ton.org/global.config.json")
 	if err != nil {
 		return nil, fmt.Errorf("get config err: %v", err.Error())
 	}
