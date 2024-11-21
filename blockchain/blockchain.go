@@ -64,7 +64,7 @@ func NewConnection(addr, key string) (*Connection, error) {
 		return nil, fmt.Errorf("connection err: %v", err.Error())
 	}
 
-	wrappedClient := ton.NewAPIClient(client).WithRetry()
+	wrappedClient := ton.NewAPIClient(client)
 
 	rootDNS, bcConfig, err := getConfigData(ctx, wrappedClient)
 	if err != nil {
