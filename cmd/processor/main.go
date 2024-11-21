@@ -2,8 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/gobicycle/bicycle/api"
 	"github.com/gobicycle/bicycle/blockchain"
 	"github.com/gobicycle/bicycle/config"
@@ -12,21 +20,20 @@ import (
 	"github.com/gobicycle/bicycle/queue"
 	"github.com/gobicycle/bicycle/webhook"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-	"time"
 )
 
 var Version = "dev"
 
 func main() {
-
 	log.Infof("App version: %s", Version)
 
 	config.GetConfig()
+
+	confStr, err := json.Marshal(config.Config)
+	if err != nil {
+		log.Fatalf("marshal config error: %v", err)
+	}
+	fmt.Println(string(confStr))
 
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
