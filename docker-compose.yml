@@ -22,7 +22,7 @@ services:
     image: payment-processor
     container_name: payment_processor
     ports:
-      - "127.0.0.1:9090:${API_PORT}"
+      - "127.0.0.1:10010:${API_PORT}"
     restart: unless-stopped
     environment:
       DB_URI: ${DB_URI} # example: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@payment_processor_db:5432/${POSTGRES_DB}"
