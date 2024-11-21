@@ -60,6 +60,7 @@ func NewConnection(addr, key string) (*Connection, error) {
 	defer cancel()
 
 	err := client.AddConnectionsFromConfigUrl(ctx, config.Config.NetworkConfigUrl)
+	fmt.Println(config.Config.NetworkConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("connection err: %v", err.Error())
 	}
