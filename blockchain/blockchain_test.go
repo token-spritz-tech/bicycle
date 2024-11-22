@@ -3,16 +3,17 @@ package blockchain
 import (
 	"bytes"
 	"context"
-	"github.com/gobicycle/bicycle/core"
-	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton/jetton"
-	"github.com/xssnick/tonutils-go/ton/wallet"
 	"math/big"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/gobicycle/bicycle/core"
+	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton/jetton"
+	"github.com/xssnick/tonutils-go/ton/wallet"
 )
 
 var (
@@ -22,15 +23,11 @@ var (
 )
 
 func connect(t *testing.T) *Connection {
-	server := os.Getenv("SERVER")
-	if server == "" {
-		t.Fatal("empty server var")
+	networkConfigUrl := os.Getenv("NETWORK_CONFIG_URL")
+	if networkConfigUrl == "" {
+		t.Fatal("empty network config url var")
 	}
-	key := os.Getenv("KEY")
-	if key == "" {
-		t.Fatal("empty key var")
-	}
-	c, err := NewConnection(server, key)
+	c, err := NewConnection(networkConfigUrl)
 	if err != nil {
 		t.Fatal("connections err: ", err)
 	}
@@ -223,8 +220,8 @@ func Test_DeployTonWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal("gen new wallet err: ", err)
 	}
-	//fmt.Printf("Main wallet: %v\n", mainWallet.Address().String())
-	//fmt.Printf("New wallet: %v\n", newWallet.Address().String())
+	// fmt.Printf("Main wallet: %v\n", mainWallet.Address().String())
+	// fmt.Printf("New wallet: %v\n", newWallet.Address().String())
 	_, st, err = c.GetAccountCurrentState(ctx, newWallet.Address())
 	if err != nil {
 		t.Fatal("get acc current state err: ", err)

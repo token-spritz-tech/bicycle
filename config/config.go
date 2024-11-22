@@ -1,15 +1,16 @@
 package config
 
 import (
+	"log"
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/caarlos0/env/v6"
 	"github.com/shopspring/decimal"
 	"github.com/tonkeeper/tongo/boc"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"log"
-	"math/big"
-	"strings"
-	"time"
 )
 
 const MaxJettonForwardTonAmount = 20_000_000
@@ -37,8 +38,6 @@ const JettonProxyContractCode = "B5EE9C72410102010037000114FF00F4A413F4BCF2C80B0
 const MaxCommentLength = 1000 // qty in chars
 
 var Config = struct {
-	LiteServer               string `env:"LITESERVER,required"`
-	LiteServerKey            string `env:"LITESERVER_KEY,required"`
 	Seed                     string `env:"SEED,required"`
 	DatabaseURI              string `env:"DB_URI,required"`
 	APIPort                  int    `env:"API_PORT,required"`
@@ -51,7 +50,6 @@ var Config = struct {
 	QueueURI                 string `env:"QUEUE_URI"`
 	QueueName                string `env:"QUEUE_NAME"`
 	QueueEnabled             bool   `env:"QUEUE_ENABLED" envDefault:"false"`
-	ProofCheckEnabled        bool   `env:"PROOF_CHECK_ENABLED" envDefault:"false"`
 	NetworkConfigUrl         string `env:"NETWORK_CONFIG_URL"`
 	WebhookEndpoint          string `env:"WEBHOOK_ENDPOINT"`
 	WebhookToken             string `env:"WEBHOOK_TOKEN"`
