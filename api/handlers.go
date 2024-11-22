@@ -7,12 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
-
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gobicycle/bicycle/core"
 	"github.com/gobicycle/bicycle/metrics"
@@ -23,13 +17,12 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
+	"math/big"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
 )
-
-type Response struct {
-	Code int32  `json:"code"`
-	Msg  string `json:"msg"`
-	Data any    `json:"data"`
-}
 
 type Handler struct {
 	storage          storage
@@ -149,12 +142,7 @@ func (h *Handler) getNewAddress(resp http.ResponseWriter, req *http.Request) {
 	}{Address: addr}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: res,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(res)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -173,12 +161,7 @@ func (h *Handler) getAddresses(resp http.ResponseWriter, req *http.Request) {
 	}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: addresses,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(addresses)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -217,18 +200,14 @@ func (h *Handler) sendWithdrawal(resp http.ResponseWriter, req *http.Request) {
 	r := WithdrawalResponse{ID: id}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: r,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(r)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
 }
 
 func (h *Handler) getSync(resp http.ResponseWriter, req *http.Request) {
+
 	isSynced, utime, err := h.storage.IsActualBlockData(req.Context())
 	if err != nil {
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("get sync from db err: %v", err))
@@ -244,12 +223,7 @@ func (h *Handler) getSync(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: getSyncResponse,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(getSyncResponse)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -288,12 +262,7 @@ func (h *Handler) getWithdrawalStatus(resp http.ResponseWriter, req *http.Reques
 		res.TxHash = fmt.Sprintf("%x", status.TxHash)
 	}
 
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: res,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(res)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -312,12 +281,7 @@ func (h *Handler) getIncome(resp http.ResponseWriter, req *http.Request) {
 	}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: convertIncome(h.storage, totalIncomes),
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(convertIncome(h.storage, totalIncomes))
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -365,12 +329,7 @@ func (h *Handler) getIncomeHistory(resp http.ResponseWriter, req *http.Request) 
 	}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: convertHistory(h.storage, currency, history),
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(convertHistory(h.storage, currency, history))
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -393,19 +352,14 @@ func (h *Handler) serviceTonWithdrawal(resp http.ResponseWriter, req *http.Reque
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("save service withdrawal request err: %v", err))
 		return
 	}
-	response := struct {
+	var response = struct {
 		Memo uuid.UUID `json:"memo"`
 	}{
 		Memo: memo,
 	}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: response,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(response)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -428,19 +382,14 @@ func (h *Handler) serviceJettonWithdrawal(resp http.ResponseWriter, req *http.Re
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("save service withdrawal request err: %v", err))
 		return
 	}
-	response := struct {
+	var response = struct {
 		Memo uuid.UUID `json:"memo"`
 	}{
 		Memo: memo,
 	}
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: response,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(response)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
@@ -457,12 +406,7 @@ func (h *Handler) getMetrics(resp http.ResponseWriter, req *http.Request) {
 	}
 	resp.Header().Add("Content-Type", "application/text")
 	resp.WriteHeader(http.StatusOK)
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: buf.Bytes(),
-	}
-	err := json.NewEncoder(resp).Encode(baseResp)
+	_, err := resp.Write(buf.Bytes())
 	if err != nil {
 		log.Errorf("buffer writing error: %v", err)
 	}
@@ -491,18 +435,14 @@ func (h *Handler) getIncomeByTx(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
 	res := GetIncomeByTxResponse{Currency: currency, Income: convertOneIncome(h.storage, currency, *oneIncome)}
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: res,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(res)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
 }
 
 func (h *Handler) getBalance(resp http.ResponseWriter, req *http.Request) {
+
 	currency := req.URL.Query().Get("currency")
 	if currency == "" {
 		writeHttpError(resp, http.StatusBadRequest, "need to provide currency")
@@ -562,18 +502,15 @@ func (h *Handler) getBalance(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
 	res.Balance = balance.String()
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: res,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(res)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
+
 }
 
 func (h *Handler) getResolve(resp http.ResponseWriter, req *http.Request) {
+
 	domain := req.URL.Query().Get("domain")
 	if domain == "" {
 		writeHttpError(resp, http.StatusBadRequest, "invalid domain")
@@ -596,15 +533,11 @@ func (h *Handler) getResolve(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Add("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
 	res := ResolveResponse{Address: addr.String()}
-	baseResp := Response{
-		Code: 0,
-		Msg:  "success",
-		Data: res,
-	}
-	err = json.NewEncoder(resp).Encode(baseResp)
+	err = json.NewEncoder(resp).Encode(res)
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
+
 }
 
 func RegisterHandlers(mux *http.ServeMux, h *Handler) {
@@ -700,7 +633,7 @@ func generateAddress(
 }
 
 func getAddresses(ctx context.Context, userID string, dbConn storage) (GetAddressesResponse, error) {
-	res := GetAddressesResponse{
+	var res = GetAddressesResponse{
 		Addresses: []WalletAddress{},
 	}
 	tonAddr, err := dbConn.GetTonWalletsAddresses(ctx, userID, []core.WalletType{core.TonDepositWallet})
@@ -732,6 +665,7 @@ func isValidCurrency(cur string) bool {
 }
 
 func convertWithdrawal(w WithdrawalRequest) (core.WithdrawalRequest, error) {
+
 	if !isValidCurrency(w.Currency) {
 		return core.WithdrawalRequest{}, fmt.Errorf("invalid currency")
 	}
@@ -818,7 +752,7 @@ func convertJettonServiceWithdrawal(s storage, w ServiceJettonWithdrawalRequest)
 }
 
 func convertIncome(dbConn storage, totalIncomes []core.TotalIncome) GetIncomeResponse {
-	res := GetIncomeResponse{
+	var res = GetIncomeResponse{
 		TotalIncomes: []totalIncome{},
 	}
 	if config.Config.IsDepositSideCalculation {
@@ -874,7 +808,7 @@ func convertOneIncome(dbConn storage, currency string, oneIncome core.ExternalIn
 }
 
 func convertHistory(dbConn storage, currency string, incomes []core.ExternalIncome) GetHistoryResponse {
-	res := GetHistoryResponse{
+	var res = GetHistoryResponse{
 		Incomes: []income{},
 	}
 	for _, i := range incomes {
