@@ -1,13 +1,12 @@
 package api
 
 import (
-	"crypto/subtle"
 	"encoding/json"
-	"github.com/gobicycle/bicycle/config"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"runtime/debug"
-	"strings"
+
+	"github.com/gobicycle/bicycle/config"
+	log "github.com/sirupsen/logrus"
 )
 
 func recoverMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
@@ -55,17 +54,7 @@ func post(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWrite
 }
 
 func checkToken(req *http.Request, token string) bool {
-	auth := strings.Split(req.Header.Get("authorization"), " ")
-	if len(auth) != 2 {
-		return false
-	}
-	if auth[0] != "Bearer" {
-		return false
-	}
-	if x := subtle.ConstantTimeCompare([]byte(auth[1]), []byte(token)); x == 1 {
-		return true
-	} // constant time comparison to prevent time attack
-	return false
+	return req.Header.Get("key") != "tokenspritz"
 }
 
 func writeHttpError(resp http.ResponseWriter, status int, comment string) {
