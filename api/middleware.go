@@ -54,7 +54,7 @@ func post(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWrite
 
 func checkToken(req *http.Request) bool {
 	log.Infof("key: %s", req.Header.Get("key"))
-	return req.Header.Get("key") != "tokenspritz"
+	return req.Header.Get("key") == "tokenspritz"
 }
 
 func writeHttpError(resp http.ResponseWriter, status int, comment string) {
