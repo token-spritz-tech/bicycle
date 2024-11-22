@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/gobicycle/bicycle/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +24,7 @@ func recoverMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.
 
 func authMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !checkToken(r, config.Config.APIToken) {
+		if !checkToken(r) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -53,7 +52,7 @@ func post(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWrite
 	}
 }
 
-func checkToken(req *http.Request, token string) bool {
+func checkToken(req *http.Request) bool {
 	return req.Header.Get("key") != "tokenspritz"
 }
 
