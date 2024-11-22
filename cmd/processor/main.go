@@ -39,7 +39,7 @@ func main() {
 	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
 	wg := new(sync.WaitGroup)
 
-	bcClient, err := blockchain.NewConnection(config.Config.NetworkConfigUrl)
+	bcClient, err := blockchain.NewConnection("https://dton.io/ls/1682591978/32EDE0089C69F78B06A7201A84E3DB84D2558206AB6C965335435C391F79C263/global.config.json")
 	if err != nil {
 		log.Fatalf("blockchain connection error: %v", err)
 	}
