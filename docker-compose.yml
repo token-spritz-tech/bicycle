@@ -79,7 +79,6 @@ services:
 
 networks:
   p-network:
-    driver: bridge
 
 volumes:
   bicycle-postgres:
