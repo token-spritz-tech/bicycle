@@ -5,6 +5,7 @@ COPY go.sum .
 RUN go mod download
 COPY api api
 COPY blockchain blockchain
+COPY restful restful
 COPY cmd cmd
 COPY config config
 COPY core core
