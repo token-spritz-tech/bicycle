@@ -2,7 +2,7 @@ FROM docker.io/library/golang:1.22-bullseye AS builder
 WORKDIR /build-dir
 COPY go.mod .
 COPY go.sum .
-RUN go mod download all
+RUN go mod download
 COPY api api
 COPY blockchain blockchain
 COPY cmd cmd
