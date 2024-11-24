@@ -79,6 +79,9 @@ type Cutoffs struct {
 }
 
 func LoadConfig() {
+	Config.Coins = make(map[int]asset.CoinListItem)
+	Config.Tokens = make(map[string]asset.TokenListItem)
+	Config.Jettons = make(map[string]Jetton)
 	if Config.ForwardTonAmount < 0 || Config.ForwardTonAmount > MaxJettonForwardTonAmount {
 		log.Fatalf("Forward TON amount for jetton transfer must be positive and less than %d", MaxJettonForwardTonAmount)
 	} else {
