@@ -6,6 +6,7 @@ RUN go mod download
 COPY api api
 COPY blockchain blockchain
 COPY restful restful
+COPY pkg pkg
 COPY cmd cmd
 COPY config config
 COPY core core
