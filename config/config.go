@@ -166,7 +166,7 @@ func LoadTonChain() (err error) {
 	if err != nil {
 		return
 	}
-	for _, chain := range chainList {
+	for _, chain := range chainList.Records {
 		if chain.Name == "TON" {
 			Config.Chain = chain
 			return

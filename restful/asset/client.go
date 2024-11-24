@@ -1,8 +1,9 @@
 package asset
 
 import (
-	"bicycle/pkg/client"
 	"context"
+
+	"bicycle/pkg/client"
 )
 
 func NewClient(baseUrl string, authKey string) *Client {
@@ -20,7 +21,7 @@ func (s *Client) CoinList(ctx context.Context, req CoinListReq) (d CoinListResp,
 	return
 }
 
-func (s *Client) ChainList(ctx context.Context, req ChainListReq) (d []ChainListItem, err error) {
+func (s *Client) ChainList(ctx context.Context, req ChainListReq) (d ChainListResp, err error) {
 	err = s.Get(ctx, s.BaseUrl+"/api/v1/asset/chain/list", req, &d)
 	return
 }
