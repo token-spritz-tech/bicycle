@@ -44,29 +44,29 @@ const JettonProxyContractCode = "B5EE9C72410102010037000114FF00F4A413F4BCF2C80B0
 const MaxCommentLength = 1000 // qty in chars
 
 var Config = struct {
-	Seed                     string `json:""`
-	DatabaseURI              string `json:""`
-	APIPort                  int    `json:""`
-	Testnet                  bool   `json:",default=true"`
-	IsDepositSideCalculation bool   `json:",default=true"`
-	QueueURI                 string `json:",optional"`
-	QueueName                string `json:",optional"`
-	QueueEnabled             bool   `json:",default=false"`
-	NetworkConfigUrl         string `json:""`
-	WebhookEndpoint          string `json:",optional"`
-	WebhookToken             string `json:",optional"`
-	AllowableLaggingSec      int    `json:",optional"`
-	ForwardTonAmount         int    `json:",default=1"`
-	WalletClientUrl          string `json:""`                     // TS钱包服务
-	AssetClientUrl           string `json:""`                     // TS资产服务
-	ClientKey                string `json:",default=tokenspritz"` // 客户端密钥
-	Jettons                  map[string]Jetton
-	Ton                      Cutoffs
-	ColdWallet               *address.Address
-	BlockchainConfig         *boc.Cell
-	Coins                    map[int]asset.CoinListItem
-	Chain                    asset.ChainListItem
-	Tokens                   map[string]asset.TokenListItem
+	Seed                     string                         `json:""`
+	DatabaseURI              string                         `json:""`
+	APIPort                  int                            `json:""`
+	Testnet                  bool                           `json:",default=true"`
+	IsDepositSideCalculation bool                           `json:",default=true"`
+	QueueURI                 string                         `json:",optional"`
+	QueueName                string                         `json:",optional"`
+	QueueEnabled             bool                           `json:",default=false"`
+	NetworkConfigUrl         string                         `json:""`
+	WebhookEndpoint          string                         `json:",optional"`
+	WebhookToken             string                         `json:",optional"`
+	AllowableLaggingSec      int                            `json:",optional"`
+	ForwardTonAmount         int                            `json:",default=1"`
+	WalletClientUrl          string                         `json:""`                     // TS钱包服务
+	AssetClientUrl           string                         `json:""`                     // TS资产服务
+	ClientKey                string                         `json:",default=tokenspritz"` // 客户端密钥
+	Jettons                  map[string]Jetton              `json:",optional"`
+	Ton                      Cutoffs                        `json:",optional"`
+	ColdWallet               *address.Address               `json:",optional"`
+	BlockchainConfig         *boc.Cell                      `json:",optional"`
+	Coins                    map[int]asset.CoinListItem     `json:",optional"`
+	Chain                    asset.ChainListItem            `json:",optional"`
+	Tokens                   map[string]asset.TokenListItem `json:",optional"`
 }{}
 
 type Jetton struct {
