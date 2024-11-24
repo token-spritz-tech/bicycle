@@ -33,8 +33,16 @@ func main() {
 	flag.Parse()
 
 	conf.MustLoad(*configFile, &config.Config)
+	config.LoadConfig()
 
+	log.Info("config loaded")
 	confStr, err := json.Marshal(config.Config)
+	if err != nil {
+		log.Fatalf("marshal config error: %v", err)
+	}
+	fmt.Println(string(confStr))
+
+	confStr, err = json.Marshal(config.Config)
 	if err != nil {
 		log.Fatalf("marshal config error: %v", err)
 	}

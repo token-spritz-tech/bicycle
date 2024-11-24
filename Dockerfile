@@ -24,12 +24,4 @@ RUN mkdir -p /app/lib
 RUN wget -O /app/lib/libemulator.so https://github.com/ton-blockchain/ton/releases/download/v2024.09/libemulator-linux-x86_64.so
 ENV LD_LIBRARY_PATH=/app/lib
 COPY --from=builder /tmp/processor /app/processor
-CMD ["/app/processor", "-v"]
-
-FROM docker.io/library/ubuntu:20.04 AS payment-test
-RUN apt-get update && apt-get install -y openssl ca-certificates libsecp256k1-0 libsodium23 wget && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /app/lib
-RUN wget -O /app/lib/libemulator.so https://github.com/ton-blockchain/ton/releases/download/v2024.09/libemulator-linux-x86_64.so
-ENV LD_LIBRARY_PATH=/app/lib
-COPY --from=builder /tmp/testutil /app/testutil
-CMD ["/app/testutil", "-v"]
+CMD ["/app/processor", "-f", "/app/config.yaml"]
