@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
+	"errors"
 	"log"
 	"math/big"
-	"strings"
 	"time"
 
-	"github.com/caarlos0/env/v6"
+	"github.com/gobicycle/bicycle/restful/asset"
+	"github.com/gobicycle/bicycle/restful/wallet"
 	"github.com/shopspring/decimal"
 	"github.com/tonkeeper/tongo/boc"
 	"github.com/xssnick/tonutils-go/address"
@@ -30,6 +32,9 @@ var (
 
 	AllowableBlockchainLagging     = 40 * time.Second // TODO: use env var
 	AllowableServiceToNodeTimeDiff = 2 * time.Second
+
+	AssetClient  *asset.Client
+	WalletClient *wallet.Client
 )
 
 // JettonProxyContractCode source code at https://github.com/gobicycle/ton-proxy-contract
@@ -38,152 +43,171 @@ const JettonProxyContractCode = "B5EE9C72410102010037000114FF00F4A413F4BCF2C80B0
 const MaxCommentLength = 1000 // qty in chars
 
 var Config = struct {
-	Seed                     string `env:"SEED,required"`
-	DatabaseURI              string `env:"DB_URI,required"`
-	APIPort                  int    `env:"API_PORT,required"`
-	APIToken                 string `env:"API_TOKEN,required"`
-	Testnet                  bool   `env:"IS_TESTNET" envDefault:"true"`
-	ColdWalletString         string `env:"COLD_WALLET"`
-	JettonString             string `env:"JETTONS"`
-	TonString                string `env:"TON_CUTOFFS,required"`
-	IsDepositSideCalculation bool   `env:"DEPOSIT_SIDE_BALANCE" envDefault:"true"` // TODO: rename to DEPOSIT_SIDE_CALCULATION
-	QueueURI                 string `env:"QUEUE_URI"`
-	QueueName                string `env:"QUEUE_NAME"`
-	QueueEnabled             bool   `env:"QUEUE_ENABLED" envDefault:"false"`
-	NetworkConfigUrl         string `env:"NETWORK_CONFIG_URL"`
-	WebhookEndpoint          string `env:"WEBHOOK_ENDPOINT"`
-	WebhookToken             string `env:"WEBHOOK_TOKEN"`
-	AllowableLaggingSec      int    `env:"ALLOWABLE_LAG"`
-	ForwardTonAmount         int    `env:"FORWARD_TON_AMOUNT" envDefault:"1"`
+	Seed                     string `json:""`
+	DatabaseURI              string `json:""`
+	APIPort                  int    `json:""`
+	Testnet                  bool   `json:",default=true"`
+	IsDepositSideCalculation bool   `json:",default=true"`
+	QueueURI                 string `json:""`
+	QueueName                string `json:""`
+	QueueEnabled             bool   `json:",default=false"`
+	NetworkConfigUrl         string `json:""`
+	WebhookEndpoint          string `json:""`
+	WebhookToken             string `json:""`
+	AllowableLaggingSec      int    `json:""`
+	ForwardTonAmount         int    `json:",default=1"`
+	WalletClientUrl          string `json:""`                     // TS钱包服务
+	AssetClientUrl           string `json:""`                     // TS资产服务
+	ClientKey                string `json:",default=tokenspritz"` // 客户端密钥
 	Jettons                  map[string]Jetton
 	Ton                      Cutoffs
 	ColdWallet               *address.Address
 	BlockchainConfig         *boc.Cell
+	Coins                    map[int]asset.CoinListItem
+	Chain                    asset.ChainListItem
+	Tokens                   map[string]asset.TokenListItem
 }{}
 
 type Jetton struct {
-	Master             *address.Address
-	WithdrawalCutoff   *big.Int
-	HotWalletMaxCutoff *big.Int
-	HotWalletResidual  *big.Int
+	Master           *address.Address
+	WithdrawalCutoff *big.Int
 }
 
 type Cutoffs struct {
-	HotWalletMin      *big.Int
-	HotWalletMax      *big.Int
-	Withdrawal        *big.Int
-	HotWalletResidual *big.Int
+	Withdrawal *big.Int
 }
 
-func GetConfig() {
-	err := env.Parse(&Config)
-	if err != nil {
-		log.Fatalf("Can not load config")
-	}
-	Config.Jettons = parseJettonString(Config.JettonString)
-	Config.Ton = parseTonString(Config.TonString)
-
+func LoadConfig() {
 	if Config.ForwardTonAmount < 0 || Config.ForwardTonAmount > MaxJettonForwardTonAmount {
 		log.Fatalf("Forward TON amount for jetton transfer must be positive and less than %d", MaxJettonForwardTonAmount)
 	} else {
 		JettonForwardAmount = tlb.FromNanoTONU(uint64(Config.ForwardTonAmount))
 	}
 
-	if Config.ColdWalletString != "" {
-		coldAddr, err := address.ParseAddr(Config.ColdWalletString)
-		if err != nil {
-			log.Fatalf("Can not parse cold wallet address: %v", err)
-		}
-		if coldAddr.Type() != address.StdAddress {
-			log.Fatalf("Only std cold wallet address supported")
-		}
-		if coldAddr.IsTestnetOnly() && !Config.Testnet {
-			log.Fatalf("Can not use testnet cold wallet address for mainnet")
-		}
-		Config.ColdWallet = coldAddr
-	}
-
 	if Config.AllowableLaggingSec != 0 {
 		AllowableBlockchainLagging = time.Second * time.Duration(Config.AllowableLaggingSec)
 	}
+
+	AssetClient = asset.NewClient(Config.AssetClientUrl, Config.ClientKey)
+	WalletClient = wallet.NewClient(Config.WalletClientUrl, Config.ClientKey)
+
+	// 加载TON链、Token、币种
+	err := LoadTonChain()
+	if err != nil {
+		log.Fatalf("can not load ton chain: %v", err)
+		panic(err)
+	}
+	err = LoadCoins()
+	if err != nil {
+		log.Fatalf("can not load coins: %v", err)
+		panic(err)
+	}
+	err = LoadTokens()
+	if err != nil {
+		log.Fatalf("can not load tokens: %v", err)
+		panic(err)
+	}
+	if len(Config.Tokens) == 0 {
+		log.Fatalf("no tokens found")
+		panic("no tokens found")
+	}
+	// 解析Token
+	parseTokens()
 }
 
-func parseJettonString(s string) map[string]Jetton {
-	res := make(map[string]Jetton)
-	if s == "" {
-		return res
+// 加载币种
+func LoadCoins() (err error) {
+	coinList, err := AssetClient.CoinList(context.Background(), asset.CoinListReq{
+		Page:     1,
+		PageSize: 10000,
+	})
+	if err != nil {
+		return
 	}
-	jettons := strings.Split(s, ",")
-	for _, j := range jettons {
-		data := strings.Split(j, ":")
-		if len(data) != 4 && len(data) != 5 {
-			log.Fatalf("invalid jetton data")
-		}
-		cur := data[0]
-		addr, err := address.ParseAddr(data[1])
-		if err != nil {
-			log.Fatalf("invalid jetton address: %v", err)
-		}
-		maxCutoff, err := decimal.NewFromString(data[2])
-		if err != nil {
-			log.Fatalf("invalid %v jetton max cutoff: %v", data[0], err)
-		}
-		withdrawalCutoff, err := decimal.NewFromString(data[3])
-		if err != nil {
-			log.Fatalf("invalid %v jetton withdrawal cutoff: %v", data[0], err)
-		}
+	for _, coin := range coinList.Records {
+		Config.Coins[coin.ID] = coin
+	}
+	return nil
+}
 
-		residual := maxCutoff.Mul(DefaultHotWalletHysteresis)
-		if len(data) == 5 {
-			residual, err = decimal.NewFromString(data[4])
+// 加载Token
+func LoadTokens() (err error) {
+	if Config.Chain.ID == 0 {
+		return errors.New("chain id is not set")
+	}
+	if len(Config.Coins) == 0 {
+		return errors.New("coins are not set")
+	}
+	tokenList, err := AssetClient.TokenList(context.Background(), asset.TokenListReq{
+		Page:     1,
+		PageSize: 10000,
+		ChainID:  Config.Chain.ID,
+	})
+	if err != nil {
+		return
+	}
+	for _, token := range tokenList.Records {
+		if _, ok := Config.Coins[int(token.CoinID)]; !ok {
+			log.Fatalf("coin %v not found", token.CoinID)
+			continue
+		}
+		Config.Tokens[Config.Coins[int(token.CoinID)].Name] = token
+	}
+	return
+}
+
+// 加载TON链
+func LoadTonChain() (err error) {
+	chainList, err := AssetClient.ChainList(context.Background(), asset.ChainListReq{
+		Page:     1,
+		PageSize: 10000,
+	})
+	if err != nil {
+		return
+	}
+	for _, chain := range chainList {
+		if chain.Name == "TON" {
+			Config.Chain = chain
+			return
+		}
+	}
+	err = errors.New("ton chain not found")
+	return
+}
+
+func parseTokens() {
+	if len(Config.Tokens) == 0 {
+		panic("no tokens found")
+	}
+	for _, token := range Config.Tokens {
+		if _, ok := Config.Coins[int(token.CoinID)]; !ok {
+			log.Fatalf("coin %v not found", token.CoinID)
+			continue
+		}
+		c := Config.Coins[int(token.CoinID)]
+		if c.Name == "TON" {
+			minWithdrawVolume, err := decimal.NewFromString(token.MinWithdrawVolume)
+			withdrawalCutoff := minWithdrawVolume.Mul(decimal.NewFromInt(10).Pow(decimal.NewFromInt(int64(token.Decimal))))
 			if err != nil {
-				log.Fatalf("invalid hot_wallet_residual_balance parameter: %v", err)
+				log.Fatalf("invalid %v jetton withdrawal cutoff: %v", token.ID, err)
+			}
+			Config.Ton = Cutoffs{
+				Withdrawal: withdrawalCutoff.BigInt(),
+			}
+		} else {
+			addr, err := address.ParseAddr(token.Address)
+			if err != nil {
+				log.Fatalf("invalid jetton address: %v", err)
+			}
+			minWithdrawVolume, err := decimal.NewFromString(token.MinWithdrawVolume)
+			withdrawalCutoff := minWithdrawVolume.Mul(decimal.NewFromInt(10).Pow(decimal.NewFromInt(int64(token.Decimal))))
+			if err != nil {
+				log.Fatalf("invalid %v jetton withdrawal cutoff: %v", token.ID, err)
+			}
+			Config.Jettons[c.Name] = Jetton{
+				Master:           addr,
+				WithdrawalCutoff: withdrawalCutoff.BigInt(),
 			}
 		}
-
-		res[cur] = Jetton{
-			Master:             addr,
-			WithdrawalCutoff:   withdrawalCutoff.BigInt(),
-			HotWalletMaxCutoff: maxCutoff.BigInt(),
-			HotWalletResidual:  residual.BigInt(),
-		}
-	}
-	return res
-}
-
-func parseTonString(s string) Cutoffs {
-	data := strings.Split(s, ":")
-	if len(data) != 3 && len(data) != 4 {
-		log.Fatalf("invalid TON cuttofs")
-	}
-	hotWalletMin, err := decimal.NewFromString(data[0])
-	if err != nil {
-		log.Fatalf("invalid TON hot wallet min cutoff: %v", err)
-	}
-	hotWalletMax, err := decimal.NewFromString(data[1])
-	if err != nil {
-		log.Fatalf("invalid TON hot wallet max cutoff: %v", err)
-	}
-	withdrawal, err := decimal.NewFromString(data[2])
-	if err != nil {
-		log.Fatalf("invalid TON withdrawal cutoff: %v", err)
-	}
-	if hotWalletMin.Cmp(hotWalletMax) == 1 {
-		log.Fatalf("TON hot wallet max cutoff must be greater than TON hot wallet min cutoff")
-	}
-
-	residual := hotWalletMax.Mul(DefaultHotWalletHysteresis)
-	if len(data) == 4 {
-		residual, err = decimal.NewFromString(data[3])
-		if err != nil {
-			log.Fatalf("invalid hot_wallet_residual_balance parameter: %v", err)
-		}
-	}
-
-	return Cutoffs{
-		HotWalletMin:      hotWalletMin.BigInt(),
-		HotWalletMax:      hotWalletMax.BigInt(),
-		Withdrawal:        withdrawal.BigInt(),
-		HotWalletResidual: residual.BigInt(),
 	}
 }

@@ -7,6 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gobicycle/bicycle/core"
 	"github.com/gobicycle/bicycle/metrics"
@@ -17,17 +23,11 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-	"math/big"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 type Handler struct {
 	storage          storage
 	blockchain       blockchain
-	token            string
 	shard            byte
 	mutex            sync.Mutex
 	hotWalletAddress address.Address
@@ -112,8 +112,8 @@ type income struct {
 	TxHash         string `json:"tx_hash,omitempty"`
 }
 
-func NewHandler(s storage, b blockchain, token string, shard byte, hotWalletAddress address.Address) *Handler {
-	return &Handler{storage: s, blockchain: b, token: token, shard: shard, hotWalletAddress: hotWalletAddress}
+func NewHandler(s storage, b blockchain, shard byte, hotWalletAddress address.Address) *Handler {
+	return &Handler{storage: s, blockchain: b, shard: shard, hotWalletAddress: hotWalletAddress}
 }
 
 func (h *Handler) getNewAddress(resp http.ResponseWriter, req *http.Request) {
@@ -207,7 +207,6 @@ func (h *Handler) sendWithdrawal(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) getSync(resp http.ResponseWriter, req *http.Request) {
-
 	isSynced, utime, err := h.storage.IsActualBlockData(req.Context())
 	if err != nil {
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("get sync from db err: %v", err))
@@ -352,7 +351,7 @@ func (h *Handler) serviceTonWithdrawal(resp http.ResponseWriter, req *http.Reque
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("save service withdrawal request err: %v", err))
 		return
 	}
-	var response = struct {
+	response := struct {
 		Memo uuid.UUID `json:"memo"`
 	}{
 		Memo: memo,
@@ -382,7 +381,7 @@ func (h *Handler) serviceJettonWithdrawal(resp http.ResponseWriter, req *http.Re
 		writeHttpError(resp, http.StatusInternalServerError, fmt.Sprintf("save service withdrawal request err: %v", err))
 		return
 	}
-	var response = struct {
+	response := struct {
 		Memo uuid.UUID `json:"memo"`
 	}{
 		Memo: memo,
@@ -442,7 +441,6 @@ func (h *Handler) getIncomeByTx(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) getBalance(resp http.ResponseWriter, req *http.Request) {
-
 	currency := req.URL.Query().Get("currency")
 	if currency == "" {
 		writeHttpError(resp, http.StatusBadRequest, "need to provide currency")
@@ -506,11 +504,9 @@ func (h *Handler) getBalance(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
-
 }
 
 func (h *Handler) getResolve(resp http.ResponseWriter, req *http.Request) {
-
 	domain := req.URL.Query().Get("domain")
 	if domain == "" {
 		writeHttpError(resp, http.StatusBadRequest, "invalid domain")
@@ -537,7 +533,6 @@ func (h *Handler) getResolve(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Errorf("json encode error: %v", err)
 	}
-
 }
 
 func RegisterHandlers(mux *http.ServeMux, h *Handler) {
@@ -633,7 +628,7 @@ func generateAddress(
 }
 
 func getAddresses(ctx context.Context, userID string, dbConn storage) (GetAddressesResponse, error) {
-	var res = GetAddressesResponse{
+	res := GetAddressesResponse{
 		Addresses: []WalletAddress{},
 	}
 	tonAddr, err := dbConn.GetTonWalletsAddresses(ctx, userID, []core.WalletType{core.TonDepositWallet})
@@ -665,7 +660,6 @@ func isValidCurrency(cur string) bool {
 }
 
 func convertWithdrawal(w WithdrawalRequest) (core.WithdrawalRequest, error) {
-
 	if !isValidCurrency(w.Currency) {
 		return core.WithdrawalRequest{}, fmt.Errorf("invalid currency")
 	}
@@ -752,7 +746,7 @@ func convertJettonServiceWithdrawal(s storage, w ServiceJettonWithdrawalRequest)
 }
 
 func convertIncome(dbConn storage, totalIncomes []core.TotalIncome) GetIncomeResponse {
-	var res = GetIncomeResponse{
+	res := GetIncomeResponse{
 		TotalIncomes: []totalIncome{},
 	}
 	if config.Config.IsDepositSideCalculation {
@@ -808,7 +802,7 @@ func convertOneIncome(dbConn storage, currency string, oneIncome core.ExternalIn
 }
 
 func convertHistory(dbConn storage, currency string, incomes []core.ExternalIncome) GetHistoryResponse {
-	var res = GetHistoryResponse{
+	res := GetHistoryResponse{
 		Incomes: []income{},
 	}
 	for _, i := range incomes {

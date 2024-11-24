@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -20,14 +21,18 @@ import (
 	"github.com/gobicycle/bicycle/queue"
 	"github.com/gobicycle/bicycle/webhook"
 	log "github.com/sirupsen/logrus"
+	"github.com/zeromicro/go-zero/core/conf"
 )
 
 var Version = "dev"
 
+var configFile = flag.String("f", "bicycle.yaml", "the config file")
+
 func main() {
 	log.Infof("App version: %s", Version)
+	flag.Parse()
 
-	config.GetConfig()
+	conf.MustLoad(*configFile, &config.Config)
 
 	confStr, err := json.Marshal(config.Config)
 	if err != nil {
@@ -105,7 +110,7 @@ func main() {
 	withdrawalsProcessor.Start()
 
 	apiMux := http.NewServeMux()
-	h := api.NewHandler(dbClient, bcClient, config.Config.APIToken, wallets.Shard, *wallets.TonHotWallet.Address())
+	h := api.NewHandler(dbClient, bcClient, wallets.Shard, *wallets.TonHotWallet.Address())
 	api.RegisterHandlers(apiMux, h)
 	go func() {
 		err := http.ListenAndServe(fmt.Sprintf(":%d", config.Config.APIPort), apiMux)

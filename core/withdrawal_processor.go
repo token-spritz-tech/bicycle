@@ -3,6 +3,11 @@ package core
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/gobicycle/bicycle/audit"
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gofrs/uuid"
@@ -10,10 +15,6 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-	"math/big"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type WithdrawalsProcessor struct {
@@ -82,10 +83,10 @@ func (p *WithdrawalsProcessor) startWithdrawalsProcessor() {
 		}
 		time.Sleep(config.ExternalWithdrawalPeriod)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*25) // must be < ExternalWithdrawalPeriod
-		err := p.makeColdWalletWithdrawals(ctx)
-		if err != nil {
-			log.Fatalf("make withdrawals to cold wallet error: %v\n", err)
-		}
+		// err := p.makeColdWalletWithdrawals(ctx)
+		// if err != nil {
+		// 	log.Fatalf("make withdrawals to cold wallet error: %v\n", err)
+		// }
 		w, err := p.buildWithdrawalMessages(ctx)
 		if err != nil {
 			log.Fatalf("make withdrawal messages error: %v\n", err)
@@ -600,85 +601,85 @@ func (p *WithdrawalsProcessor) waitSync() {
 	}
 }
 
-func (p *WithdrawalsProcessor) makeColdWalletWithdrawals(ctx context.Context) error {
-	if p.coldWallet == nil {
-		return nil
-	}
+// func (p *WithdrawalsProcessor) makeColdWalletWithdrawals(ctx context.Context) error {
+// 	if p.coldWallet == nil {
+// 		return nil
+// 	}
 
-	tonBalance, _, err := p.bc.GetAccountCurrentState(ctx, p.wallets.TonHotWallet.Address())
-	if err != nil {
-		return err
-	}
-	dest := AddressMustFromTonutilsAddress(p.coldWallet)
+// 	tonBalance, _, err := p.bc.GetAccountCurrentState(ctx, p.wallets.TonHotWallet.Address())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	dest := AddressMustFromTonutilsAddress(p.coldWallet)
 
-	for cur, jw := range p.wallets.JettonHotWallets {
-		inProgress, err := p.db.IsInProgressInternalWithdrawalRequest(ctx, dest, cur)
-		if err != nil {
-			return err
-		}
-		if inProgress {
-			continue
-		}
-		jettonBalance, err := p.bc.GetLastJettonBalance(ctx, jw.Address)
-		if err != nil {
-			return err
-		}
-		if jettonBalance.Cmp(config.Config.Jettons[cur].HotWalletMaxCutoff) != 1 { // jettonBalance <= HotWalletMaxCutoff
-			continue
-		}
-		jettonAmount := big.NewInt(0)
-		u, err := uuid.NewV4()
-		if err != nil {
-			return err
-		}
-		jettonAmount.Sub(jettonBalance, config.Config.Jettons[cur].HotWalletResidual)
-		tonBalance.Sub(tonBalance, config.JettonTransferTonAmount.Nano())
-		req := WithdrawalRequest{
-			Currency:    jw.Currency,
-			Amount:      NewCoins(jettonAmount),
-			Bounceable:  true,
-			Destination: dest,
-			IsInternal:  true,
-			QueryID:     u.String(),
-		}
-		_, err = p.db.SaveWithdrawalRequest(ctx, req)
-		if err != nil {
-			return err
-		}
-		log.Infof("%v withdrawal to cold wallet saved", cur)
-	}
+// 	for cur, jw := range p.wallets.JettonHotWallets {
+// 		inProgress, err := p.db.IsInProgressInternalWithdrawalRequest(ctx, dest, cur)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if inProgress {
+// 			continue
+// 		}
+// 		jettonBalance, err := p.bc.GetLastJettonBalance(ctx, jw.Address)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if jettonBalance.Cmp(config.Config.Jettons[cur].HotWalletMaxCutoff) != 1 { // jettonBalance <= HotWalletMaxCutoff
+// 			continue
+// 		}
+// 		jettonAmount := big.NewInt(0)
+// 		u, err := uuid.NewV4()
+// 		if err != nil {
+// 			return err
+// 		}
+// 		jettonAmount.Sub(jettonBalance, config.Config.Jettons[cur].HotWalletResidual)
+// 		tonBalance.Sub(tonBalance, config.JettonTransferTonAmount.Nano())
+// 		req := WithdrawalRequest{
+// 			Currency:    jw.Currency,
+// 			Amount:      NewCoins(jettonAmount),
+// 			Bounceable:  true,
+// 			Destination: dest,
+// 			IsInternal:  true,
+// 			QueryID:     u.String(),
+// 		}
+// 		_, err = p.db.SaveWithdrawalRequest(ctx, req)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		log.Infof("%v withdrawal to cold wallet saved", cur)
+// 	}
 
-	inProgress, err := p.db.IsInProgressInternalWithdrawalRequest(ctx, dest, TonSymbol)
-	if err != nil {
-		return err
-	}
-	if inProgress {
-		return nil
-	}
+// 	inProgress, err := p.db.IsInProgressInternalWithdrawalRequest(ctx, dest, TonSymbol)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if inProgress {
+// 		return nil
+// 	}
 
-	if tonBalance.Cmp(config.Config.Ton.HotWalletMax) != 1 { // tonBalance <= HotWalletMax
-		return nil
-	}
+// 	if tonBalance.Cmp(config.Config.Ton.HotWalletMax) != 1 { // tonBalance <= HotWalletMax
+// 		return nil
+// 	}
 
-	tonAmount := big.NewInt(0)
-	u, err := uuid.NewV4()
-	if err != nil {
-		return err
-	}
-	tonAmount.Sub(tonBalance, config.Config.Ton.HotWalletResidual)
-	req := WithdrawalRequest{
-		Currency:    TonSymbol,
-		Amount:      NewCoins(tonAmount),
-		Bounceable:  p.coldWallet.IsBounceable(),
-		Destination: dest,
-		IsInternal:  true,
-		QueryID:     u.String(),
-	}
+// 	tonAmount := big.NewInt(0)
+// 	u, err := uuid.NewV4()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	tonAmount.Sub(tonBalance, config.Config.Ton.HotWalletResidual)
+// 	req := WithdrawalRequest{
+// 		Currency:    TonSymbol,
+// 		Amount:      NewCoins(tonAmount),
+// 		Bounceable:  p.coldWallet.IsBounceable(),
+// 		Destination: dest,
+// 		IsInternal:  true,
+// 		QueryID:     u.String(),
+// 	}
 
-	_, err = p.db.SaveWithdrawalRequest(ctx, req)
-	if err != nil {
-		return err
-	}
-	log.Infof("TON withdrawal to cold wallet saved")
-	return nil
-}
+// 	_, err = p.db.SaveWithdrawalRequest(ctx, req)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	log.Infof("TON withdrawal to cold wallet saved")
+// 	return nil
+// }

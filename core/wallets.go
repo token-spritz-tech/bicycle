@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"math/rand"
+
 	"github.com/gobicycle/bicycle/audit"
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gofrs/uuid"
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/tonkeeper/tongo/boc"
 	tongoTlb "github.com/tonkeeper/tongo/tlb"
@@ -15,8 +19,6 @@ import (
 	"github.com/xssnick/tonutils-go/ton/jetton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"math/big"
-	"math/rand"
 )
 
 type Wallets struct {
@@ -36,7 +38,6 @@ func InitWallets(
 	seed string,
 	jettons map[string]config.Jetton,
 ) (Wallets, error) {
-
 	if config.Config.ColdWallet != nil && config.Config.ColdWallet.IsBounceable() {
 		_, status, err := bc.GetAccountCurrentState(ctx, config.Config.ColdWallet)
 		if err != nil {
@@ -116,9 +117,10 @@ func initTonHotWallet(
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	if balance.Cmp(config.Config.Ton.HotWalletMin) == -1 { // hot wallet balance < TonHotWalletMinimumBalance
+	hotWalletMin := decimal.NewFromFloat(0.1).Mul(decimal.NewFromInt(10).Pow(decimal.NewFromInt(9)))
+	if balance.Cmp(hotWalletMin.BigInt()) == -1 { // hot wallet balance < TonHotWalletMinimumBalance
 		return nil, 0, 0,
-			fmt.Errorf("hot wallet balance must be at least %v nanoTON", config.Config.Ton.HotWalletMin)
+			fmt.Errorf("hot wallet balance must be at least %v nanoTON", hotWalletMin)
 	}
 	if status != tlb.AccountStatusActive {
 		err = bc.DeployTonWallet(ctx, tonHotWallet)
@@ -283,7 +285,6 @@ func MakeJettonTransferMessage(
 	comment string,
 	binaryComment string,
 ) *cell.Cell {
-
 	forwardPayload := cell.BeginCell().EndCell()
 
 	if binaryComment != "" {
@@ -305,7 +306,6 @@ func MakeJettonTransferMessage(
 		ForwardTONAmount:    forwardAmount,
 		ForwardPayload:      forwardPayload,
 	})
-
 	if err != nil {
 		log.Fatalf("jetton transfer message serialization error: %s", err.Error())
 	}
@@ -316,7 +316,6 @@ func MakeJettonTransferMessage(
 // decodeBinaryComment implements decoding of hex string and put it into cell with TLB scheme:
 // `binary_comment#b3ddcf7d {n:#} data:(SnakeData ~n) = InternalMsgBody;`
 func decodeBinaryComment(comment string) (*cell.Cell, error) {
-
 	bitString, err := boc.BitStringFromFiftHex(comment)
 	if err != nil {
 		return nil, err
@@ -342,7 +341,6 @@ func decodeBinaryComment(comment string) (*cell.Cell, error) {
 }
 
 func BuildTonWithdrawalMessage(t ExternalWithdrawalTask) *wallet.Message {
-
 	internalMessage := tlb.InternalMessage{
 		IHRDisabled: true,
 		Bounce:      t.Bounceable,
@@ -373,7 +371,6 @@ func BuildJettonWithdrawalMessage(
 	highloadWallet *wallet.Wallet,
 	fromJettonWallet *address.Address,
 ) *wallet.Message {
-
 	body := MakeJettonTransferMessage(
 		t.Destination.ToTonutilsAddressStd(0),
 		highloadWallet.Address(),
