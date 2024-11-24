@@ -1,10 +1,14 @@
 package core
 
 import (
+	"bicycle/audit"
+	"bicycle/config"
 	"context"
 	"fmt"
-	"github.com/gobicycle/bicycle/audit"
-	"github.com/gobicycle/bicycle/config"
+	"math/big"
+	"sync"
+	"time"
+
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/tonkeeper/tongo"
@@ -14,9 +18,6 @@ import (
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"math/big"
-	"sync"
-	"time"
 )
 
 type BlockScanner struct {
@@ -448,7 +449,6 @@ func convertUnknownJettonTxs(txs []*tlb.Transaction, addr Address, amount *big.I
 			Amount: ZeroCoins(),
 			TxHash: tx.Hash,
 		})
-
 	}
 	if len(txs) > 0 {
 		incomes = append(incomes, ExternalIncome{

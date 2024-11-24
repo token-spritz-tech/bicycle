@@ -1,9 +1,10 @@
 package core
 
 import (
+	"bicycle/config"
 	"encoding/hex"
 	"fmt"
-	"github.com/gobicycle/bicycle/config"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"

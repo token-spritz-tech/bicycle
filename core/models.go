@@ -1,19 +1,20 @@
 package core
 
 import (
+	"bicycle/config"
 	"context"
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/gobicycle/bicycle/config"
+	"math/big"
+	"time"
+
 	"github.com/gofrs/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-	"math/big"
-	"time"
 )
 
 const (

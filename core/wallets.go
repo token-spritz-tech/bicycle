@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bicycle/audit"
+	"bicycle/config"
 	"context"
 	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
 
-	"github.com/gobicycle/bicycle/audit"
-	"github.com/gobicycle/bicycle/config"
 	"github.com/gofrs/uuid"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"

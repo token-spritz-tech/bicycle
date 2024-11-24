@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bicycle/config"
+	"bicycle/core"
+	"bicycle/metrics"
 	"bytes"
 	"context"
 	"encoding/hex"
@@ -13,9 +16,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gobicycle/bicycle/config"
-	"github.com/gobicycle/bicycle/core"
-	"github.com/gobicycle/bicycle/metrics"
 	"github.com/gofrs/uuid"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"

@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"bicycle/config"
+	"bicycle/core"
 	"context"
 	"errors"
 	"fmt"
@@ -10,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gobicycle/bicycle/config"
-	"github.com/gobicycle/bicycle/core"
 	log "github.com/sirupsen/logrus"
 	"github.com/tonkeeper/tongo"
 	"github.com/tonkeeper/tongo/boc"

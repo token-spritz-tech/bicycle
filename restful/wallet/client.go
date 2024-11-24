@@ -1,9 +1,8 @@
 package wallet
 
 import (
+	"bicycle/pkg/client"
 	"context"
-
-	"github.com/gobicycle/bicycle/pkg/client"
 )
 
 func NewClient(baseUrl string, authKey string) *Client {

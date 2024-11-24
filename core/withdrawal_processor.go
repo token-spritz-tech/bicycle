@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bicycle/audit"
+	"bicycle/config"
 	"context"
 	"fmt"
 	"math/big"
@@ -8,8 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gobicycle/bicycle/audit"
-	"github.com/gobicycle/bicycle/config"
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/xssnick/tonutils-go/address"

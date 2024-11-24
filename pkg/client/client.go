@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bicycle/response"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gobicycle/bicycle/response"
 	"github.com/imroc/req/v3"
 )
 

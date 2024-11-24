@@ -1,18 +1,21 @@
 package blockchain
 
 import (
+	"bicycle/core"
 	"context"
-	"github.com/gobicycle/bicycle/core"
-	log "github.com/sirupsen/logrus"
-	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton"
 	"math/bits"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 )
 
-const ErrBlockNotApplied = "block is not applied"
-const ErrBlockNotInDB = "code 651"
+const (
+	ErrBlockNotApplied = "block is not applied"
+	ErrBlockNotInDB    = "code 651"
+)
 
 type ShardTracker struct {
 	connection            *Connection

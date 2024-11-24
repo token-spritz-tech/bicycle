@@ -1,12 +1,16 @@
 package db
 
 import (
+	"bicycle/audit"
+	"bicycle/config"
+	"bicycle/core"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gobicycle/bicycle/audit"
-	"github.com/gobicycle/bicycle/config"
-	"github.com/gobicycle/bicycle/core"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -14,9 +18,6 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-	"strings"
-	"sync"
-	"time"
 )
 
 type Connection struct {
@@ -386,7 +387,6 @@ func (c *Connection) saveInternalIncome(ctx context.Context, tx pgx.Tx, inc core
 }
 
 func (c *Connection) SaveWithdrawalRequest(ctx context.Context, w core.WithdrawalRequest) (int64, error) {
-
 	var queryID int64
 
 	err := c.client.QueryRow(ctx, `
@@ -1008,7 +1008,6 @@ func (c *Connection) SetExpired(ctx context.Context) error {
 			WHERE  expired_at < $1 AND processed_lt IS NULL AND failed = false
 			RETURNING query_id
 	`, time.Now().Add(-config.AllowableBlockchainLagging))
-
 	if err != nil {
 		return err
 	}
@@ -1278,7 +1277,6 @@ func (c *Connection) GetIncomeByTx(
 	string,
 	error,
 ) {
-
 	var (
 		income core.ExternalIncome
 		t      time.Time
@@ -1320,7 +1318,6 @@ func (c *Connection) GetIncomeByTx(
 }
 
 func (c *Connection) GetTotalWithdrawalAmounts(ctx context.Context, currency string) (*core.TotalWithdrawalsAmount, error) {
-
 	tx, err := c.client.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -1359,5 +1356,4 @@ func (c *Connection) GetTotalWithdrawalAmounts(ctx context.Context, currency str
 	}
 
 	return &totalAmounts, nil
-
 }

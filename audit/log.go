@@ -1,10 +1,11 @@
 package audit
 
 import (
+	"bicycle/metrics"
 	"fmt"
-	"github.com/gobicycle/bicycle/metrics"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Severity string

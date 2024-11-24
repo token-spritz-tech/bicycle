@@ -1,14 +1,14 @@
 package config
 
 import (
+	"bicycle/restful/asset"
+	"bicycle/restful/wallet"
 	"context"
 	"errors"
 	"log"
 	"math/big"
 	"time"
 
-	"github.com/gobicycle/bicycle/restful/asset"
-	"github.com/gobicycle/bicycle/restful/wallet"
 	"github.com/shopspring/decimal"
 	"github.com/tonkeeper/tongo/boc"
 	"github.com/xssnick/tonutils-go/address"

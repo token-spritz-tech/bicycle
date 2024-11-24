@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bicycle/core"
 	"bytes"
 	"context"
 	"math/big"
@@ -9,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gobicycle/bicycle/core"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/jetton"

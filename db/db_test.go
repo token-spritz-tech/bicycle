@@ -1,9 +1,9 @@
 package db
 
 import (
+	"bicycle/core"
 	"context"
 	"encoding/hex"
-	"github.com/gobicycle/bicycle/core"
 	"os"
 	"strings"
 	"testing"
@@ -214,7 +214,7 @@ func Test_SetExpired(t *testing.T) {
 	)
 	for rows.Next() {
 		var r extResult
-		var err = rows.Scan(&r.queryID, &r.failed, &r.processing, &r.processed)
+		err := rows.Scan(&r.queryID, &r.failed, &r.processing, &r.processed)
 		if err != nil {
 			t.Fatal("scan err: ", err)
 		}
@@ -242,7 +242,7 @@ func Test_SetExpired(t *testing.T) {
 	i = 0
 	for rows.Next() {
 		var r bool
-		var err = rows.Scan(&r)
+		err := rows.Scan(&r)
 		if err != nil {
 			t.Fatal("scan err: ", err)
 		}

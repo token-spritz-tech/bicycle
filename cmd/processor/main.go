@@ -1,6 +1,13 @@
 package main
 
 import (
+	"bicycle/api"
+	"bicycle/blockchain"
+	"bicycle/config"
+	"bicycle/core"
+	"bicycle/db"
+	"bicycle/queue"
+	"bicycle/webhook"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,13 +20,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gobicycle/bicycle/api"
-	"github.com/gobicycle/bicycle/blockchain"
-	"github.com/gobicycle/bicycle/config"
-	"github.com/gobicycle/bicycle/core"
-	"github.com/gobicycle/bicycle/db"
-	"github.com/gobicycle/bicycle/queue"
-	"github.com/gobicycle/bicycle/webhook"
 	log "github.com/sirupsen/logrus"
 	"github.com/zeromicro/go-zero/core/conf"
 )
