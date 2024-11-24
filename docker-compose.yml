@@ -8,7 +8,7 @@ services:
       - 10010:10010
     restart: unless-stopped
     volumes:
-      - ./config.yaml:/app/config.yaml
+      - ./configfile:/app/configfile
     networks:
       - p-network
 networks:

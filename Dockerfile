@@ -26,4 +26,4 @@ RUN mkdir -p /app/lib
 RUN wget -O /app/lib/libemulator.so https://github.com/ton-blockchain/ton/releases/download/v2024.09/libemulator-linux-x86_64.so
 ENV LD_LIBRARY_PATH=/app/lib
 COPY --from=builder /tmp/processor /app/processor
-CMD ["/app/processor", "-f", "/app/config.yaml"]
+CMD ["/app/processor", "-f", "/app/configfile/config.yaml"]
