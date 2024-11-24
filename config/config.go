@@ -1,13 +1,14 @@
 package config
 
 import (
-	"bicycle/restful/asset"
-	"bicycle/restful/wallet"
 	"context"
 	"errors"
 	"log"
 	"math/big"
 	"time"
+
+	"bicycle/restful/asset"
+	"bicycle/restful/wallet"
 
 	"github.com/shopspring/decimal"
 	"github.com/tonkeeper/tongo/boc"
@@ -48,13 +49,13 @@ var Config = struct {
 	APIPort                  int    `json:""`
 	Testnet                  bool   `json:",default=true"`
 	IsDepositSideCalculation bool   `json:",default=true"`
-	QueueURI                 string `json:""`
-	QueueName                string `json:""`
+	QueueURI                 string `json:",optional"`
+	QueueName                string `json:",optional"`
 	QueueEnabled             bool   `json:",default=false"`
 	NetworkConfigUrl         string `json:""`
-	WebhookEndpoint          string `json:""`
-	WebhookToken             string `json:""`
-	AllowableLaggingSec      int    `json:""`
+	WebhookEndpoint          string `json:",optional"`
+	WebhookToken             string `json:",optional"`
+	AllowableLaggingSec      int    `json:",optional"`
 	ForwardTonAmount         int    `json:",default=1"`
 	WalletClientUrl          string `json:""`                     // TS钱包服务
 	AssetClientUrl           string `json:""`                     // TS资产服务
