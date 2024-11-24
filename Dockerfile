@@ -7,6 +7,7 @@ COPY api api
 COPY blockchain blockchain
 COPY restful restful
 COPY pkg pkg
+COPY response response
 COPY cmd cmd
 COPY config config
 COPY core core
