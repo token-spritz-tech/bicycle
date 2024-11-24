@@ -1,13 +1,15 @@
 package core
 
 import (
-	"bicycle/audit"
-	"bicycle/config"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
+
+	"bicycle/audit"
+	"bicycle/config"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
@@ -135,21 +137,40 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	if len(s.notificators) == 0 {
 		return nil
 	}
-
-	if config.Config.IsDepositSideCalculation {
-		for _, ei := range e.ExternalIncomes {
-			err := s.pushNotification(ei.To, ei.Amount, ei.Utime, ei.From, ei.FromWorkchain, ei.Comment, ei.TxHash)
-			if err != nil {
-				return err
-			}
+	for _, ei := range e.ExternalIncomes {
+		m, err := json.Marshal(ei)
+		if err != nil {
+			return err
 		}
-	} else {
-		for _, ii := range e.InternalIncomes {
-			err := s.pushNotification(ii.From, ii.Amount, ii.Utime, nil, nil, "", ii.TxHash)
-			if err != nil {
-				return err
-			}
+		log.Infof("external income: %s", m)
+	}
+	for _, ii := range e.InternalIncomes {
+		m, err := json.Marshal(ii)
+		if err != nil {
+			return err
 		}
+		log.Infof("internal income: %s", m)
+	}
+	for _, wc := range e.SendingConfirmations {
+		m, err := json.Marshal(wc)
+		if err != nil {
+			return err
+		}
+		log.Infof("withdrawal confirmation: %s", m)
+	}
+	for _, wi := range e.InternalWithdrawals {
+		m, err := json.Marshal(wi)
+		if err != nil {
+			return err
+		}
+		log.Infof("internal withdrawal: %s", m)
+	}
+	for _, ew := range e.ExternalWithdrawals {
+		m, err := json.Marshal(ew)
+		if err != nil {
+			return err
+		}
+		log.Infof("external withdrawal: %s", m)
 	}
 	return nil
 }

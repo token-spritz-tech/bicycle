@@ -1,13 +1,6 @@
 package main
 
 import (
-	"bicycle/api"
-	"bicycle/blockchain"
-	"bicycle/config"
-	"bicycle/core"
-	"bicycle/db"
-	"bicycle/queue"
-	"bicycle/webhook"
 	"context"
 	"encoding/json"
 	"errors"
@@ -19,6 +12,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"bicycle/api"
+	"bicycle/blockchain"
+	"bicycle/config"
+	"bicycle/core"
+	"bicycle/db"
+	"bicycle/queue"
+	"bicycle/webhook"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -52,7 +53,7 @@ func main() {
 	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
 	wg := new(sync.WaitGroup)
 
-	bcClient, err := blockchain.NewConnection("https://dton.io/ls/1682591978/32EDE0089C69F78B06A7201A84E3DB84D2558206AB6C965335435C391F79C263/global.config.json")
+	bcClient, err := blockchain.NewConnection(config.Config.NetworkConfigUrl)
 	if err != nil {
 		log.Fatalf("blockchain connection error: %v", err)
 	}

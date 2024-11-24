@@ -1,14 +1,15 @@
 package core
 
 import (
-	"bicycle/audit"
-	"bicycle/config"
 	"context"
 	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"bicycle/audit"
+	"bicycle/config"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
@@ -270,6 +271,9 @@ func (p *WithdrawalsProcessor) buildJettonInternalWithdrawalMessage(
 	balance, err := p.bc.GetLastJettonBalance(ctx, jettonWalletAddress)
 	if err != nil {
 		return nil, uuid.UUID{}, err
+	}
+	if _, ok := config.Config.Jettons[task.Currency]; !ok {
+		return nil, uuid.UUID{}, fmt.Errorf("unknown currency %s", task.Currency)
 	}
 	if balance.Cmp(config.Config.Jettons[task.Currency].WithdrawalCutoff) == 1 { // balance > MinimalJettonWithdrawalAmount
 		memo, err := uuid.NewV4()
