@@ -155,7 +155,7 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	// 外部提现通知
 	for _, ew := range e.ExternalWithdrawals {
 		userQueryId, _ := s.db.GetWithdrawalRequestByHash(context.Background(), ew.TxHash)
-		if userQueryId != "" {
+		if userQueryId == "" {
 			continue
 		}
 		notification := WebhookNotification{
