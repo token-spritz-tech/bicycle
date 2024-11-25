@@ -49,9 +49,6 @@ var Config = struct {
 	APIPort                  int                            `json:""`
 	Testnet                  bool                           `json:",default=false"`
 	IsDepositSideCalculation bool                           `json:",default=true"`
-	QueueURI                 string                         `json:",optional"`
-	QueueName                string                         `json:",optional"`
-	QueueEnabled             bool                           `json:",default=false"`
 	NetworkConfigUrl         string                         `json:""`
 	WebhookEndpoint          string                         `json:",optional"`
 	WebhookToken             string                         `json:",optional"`

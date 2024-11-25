@@ -18,8 +18,6 @@ import (
 	"bicycle/config"
 	"bicycle/core"
 	"bicycle/db"
-	"bicycle/queue"
-	"bicycle/webhook"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/zeromicro/go-zero/core/conf"
@@ -84,24 +82,6 @@ func main() {
 		log.Fatalf("Wallets initialization error: %v", err)
 	}
 
-	var notificators []core.Notificator
-
-	if config.Config.QueueEnabled {
-		queueClient, err := queue.NewAmqpClient(config.Config.QueueURI, config.Config.QueueEnabled, config.Config.QueueName)
-		if err != nil {
-			log.Fatalf("new queue client creating error: %v", err)
-		}
-		notificators = append(notificators, queueClient)
-	}
-
-	if config.Config.WebhookEndpoint != "" {
-		webhookClient, err := webhook.NewWebhookClient(config.Config.WebhookEndpoint, config.Config.WebhookToken)
-		if err != nil {
-			log.Fatalf("new webhook client creating error: %v", err)
-		}
-		notificators = append(notificators, webhookClient)
-	}
-
 	var tracker *blockchain.ShardTracker
 	block, err := dbClient.GetLastSavedBlockID(ctx)
 	if !errors.Is(err, core.ErrNotFound) && err != nil {
@@ -112,7 +92,7 @@ func main() {
 		tracker = blockchain.NewShardTracker(wallets.Shard, block, bcClient)
 	}
 
-	blockScanner := core.NewBlockScanner(wg, dbClient, bcClient, wallets.Shard, tracker, notificators)
+	blockScanner := core.NewBlockScanner(wg, dbClient, bcClient, wallets.Shard, tracker, config.WalletClient)
 
 	withdrawalsProcessor := core.NewWithdrawalsProcessor(
 		wg, dbClient, bcClient, wallets, config.Config.ColdWallet)

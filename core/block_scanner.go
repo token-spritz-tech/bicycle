@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bicycle/audit"
+	"bicycle/restful/wallet"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,7 @@ type BlockScanner struct {
 	shard        byte
 	tracker      blocksTracker
 	wg           *sync.WaitGroup
-	notificators []Notificator
+	walletClient *wallet.Client
 }
 
 type transactions struct {
@@ -70,7 +71,7 @@ func NewBlockScanner(
 	blockchain blockchain,
 	shard byte,
 	tracker blocksTracker,
-	notificators []Notificator,
+	walletClient *wallet.Client,
 ) *BlockScanner {
 	t := &BlockScanner{
 		db:           db,
@@ -78,7 +79,7 @@ func NewBlockScanner(
 		shard:        shard,
 		tracker:      tracker,
 		wg:           wg,
-		notificators: notificators,
+		walletClient: walletClient,
 	}
 	t.wg.Add(1)
 	go t.Start()
@@ -133,9 +134,6 @@ func (s *BlockScanner) processBlock(ctx context.Context, block ShardBlockHeader)
 }
 
 func (s *BlockScanner) pushNotifications(e BlockEvents) error {
-	if len(s.notificators) == 0 {
-		return nil
-	}
 	// 外部充值通知
 	for _, ei := range e.ExternalIncomes {
 		owner := s.db.GetOwner(ei.To)
@@ -175,11 +173,20 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 func (s *BlockScanner) pushNotification(notification WebhookNotification) error {
 	msg, _ := json.Marshal(notification)
 	log.Infof("push notification: %s", string(msg))
-	for _, n := range s.notificators {
-		err := n.Publish(notification)
-		if err != nil {
-			return err
-		}
+	if s.walletClient == nil {
+		return nil
+	}
+	err := s.walletClient.BicycleNotification(context.Background(), wallet.BicycleNotificationReq{
+		Type:        notification.Type,
+		Address:     notification.Address,
+		Timestamp:   notification.Timestamp,
+		Amount:      notification.Amount,
+		Comment:     notification.Comment,
+		TxHash:      notification.TxHash,
+		UserQueryID: notification.UserQueryID,
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
