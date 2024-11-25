@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
@@ -53,7 +54,7 @@ type HighLoadWalletExtMsgInfo struct {
 	Messages *cell.Dictionary
 }
 
-type Notification struct {
+type WebhookNotification struct {
 	Type        string `json:"type"`
 	Address     string `json:"address"`
 	Timestamp   int64  `json:"time"`
@@ -141,7 +142,7 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 		if owner == nil {
 			continue
 		}
-		notification := Notification{
+		notification := WebhookNotification{
 			Type:      "external_income",
 			Address:   owner.ToUserFormat(),
 			Timestamp: int64(ei.Utime),
@@ -157,7 +158,7 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 		if userQueryId != "" {
 			continue
 		}
-		notification := Notification{
+		notification := WebhookNotification{
 			Type:        "external_withdrawal",
 			Address:     ew.To.ToUserFormat(),
 			Timestamp:   int64(ew.Utime),
@@ -171,9 +172,11 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	return nil
 }
 
-func (s *BlockScanner) pushNotification(notification Notification) error {
+func (s *BlockScanner) pushNotification(notification WebhookNotification) error {
+	msg, _ := json.Marshal(notification)
+	log.Infof("push notification: %s", string(msg))
 	for _, n := range s.notificators {
-		err := n.Publish(notification)
+		err := n.Publish(msg)
 		if err != nil {
 			return err
 		}
