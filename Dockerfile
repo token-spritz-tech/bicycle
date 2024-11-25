@@ -14,7 +14,6 @@ COPY core core
 COPY db db
 COPY audit audit
 COPY queue queue
-COPY webhook webhook
 COPY metrics metrics
 RUN apt-get update && apt-get install -y libsecp256k1-0 libsodium23
 ARG GIT_TAG
