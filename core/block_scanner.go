@@ -176,7 +176,7 @@ func (s *BlockScanner) pushNotification(notification WebhookNotification) error 
 	msg, _ := json.Marshal(notification)
 	log.Infof("push notification: %s", string(msg))
 	for _, n := range s.notificators {
-		err := n.Publish(msg)
+		err := n.Publish(notification)
 		if err != nil {
 			return err
 		}
