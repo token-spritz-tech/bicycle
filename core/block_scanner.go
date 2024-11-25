@@ -136,13 +136,14 @@ func (s *BlockScanner) processBlock(ctx context.Context, block ShardBlockHeader)
 func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	// 外部充值通知
 	for _, ei := range e.ExternalIncomes {
-		owner := s.db.GetOwner(ei.To)
-		if owner == nil {
-			continue
+		addr := ei.To
+		owner := s.db.GetOwner(addr)
+		if owner != nil {
+			addr = *owner
 		}
 		notification := WebhookNotification{
 			Type:      "external_income",
-			Address:   owner.ToUserFormat(),
+			Address:   addr.ToUserFormat(),
 			Timestamp: int64(ei.Utime),
 			Amount:    ei.Amount.String(),
 			Comment:   ei.Comment,
