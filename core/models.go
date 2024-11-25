@@ -335,7 +335,7 @@ type storage interface {
 		expiredAt time.Time, filled bool) error
 	GetServiceDepositWithdrawalTasks(ctx context.Context, limit int) ([]ServiceWithdrawalTask, error)
 	GetJettonWallet(ctx context.Context, address Address) (*WalletData, bool, error)
-	GetWithdrawalRequestByHash(ctx context.Context, hash []byte) (string, error)
+	GetWithdrawalRequest(ctx context.Context, hash []byte, msgUuid uuid.UUID, address Address) (string, error)
 }
 
 type blockchain interface {

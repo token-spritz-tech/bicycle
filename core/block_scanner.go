@@ -154,7 +154,7 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	}
 	// 外部提现通知
 	for _, ew := range e.ExternalWithdrawals {
-		userQueryId, _ := s.db.GetWithdrawalRequestByHash(context.Background(), ew.TxHash)
+		userQueryId, _ := s.db.GetWithdrawalRequest(context.Background(), ew.TxHash, ew.ExtMsgUuid, ew.To)
 		if userQueryId == "" {
 			continue
 		}

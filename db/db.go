@@ -115,12 +115,12 @@ func (c *Connection) SaveTonWallet(ctx context.Context, walletData core.WalletDa
 	return nil
 }
 
-func (c *Connection) GetWithdrawalRequestByHash(ctx context.Context, hash []byte) (string, error) {
+func (c *Connection) GetWithdrawalRequest(ctx context.Context, hash []byte, msgUuid uuid.UUID, address core.Address) (string, error) {
 	// 根据tx_hash获取提现请求ID
 	var queryId int
 	err := c.client.QueryRow(ctx, `
-		SELECT query_id FROM payments.external_withdrawals WHERE tx_hash = $1
-	`, hash).Scan(&queryId)
+		SELECT query_id FROM payments.external_withdrawals WHERE tx_hash = $1 AND msg_uuid = $2 AND address = $3
+	`, hash, msgUuid, address).Scan(&queryId)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}

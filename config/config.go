@@ -47,7 +47,7 @@ var Config = struct {
 	Seed                     string                         `json:""`
 	DatabaseURI              string                         `json:""`
 	APIPort                  int                            `json:""`
-	Testnet                  bool                           `json:",default=true"`
+	Testnet                  bool                           `json:",default=false"`
 	IsDepositSideCalculation bool                           `json:",default=true"`
 	QueueURI                 string                         `json:",optional"`
 	QueueName                string                         `json:",optional"`
