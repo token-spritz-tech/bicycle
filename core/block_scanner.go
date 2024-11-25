@@ -2,14 +2,12 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
 	"bicycle/audit"
-	"bicycle/config"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
@@ -55,14 +53,14 @@ type HighLoadWalletExtMsgInfo struct {
 	Messages *cell.Dictionary
 }
 
-type incomeNotification struct {
-	Deposit   string `json:"deposit_address"`
-	Timestamp int64  `json:"time"`
-	Amount    string `json:"amount"`
-	Source    string `json:"source_address,omitempty"`
-	Comment   string `json:"comment,omitempty"`
-	UserID    string `json:"user_id"`
-	TxHash    string `json:"tx_hash"`
+type Notification struct {
+	Type        string `json:"type"`
+	Address     string `json:"address"`
+	Timestamp   int64  `json:"time"`
+	Amount      string `json:"amount"`
+	Comment     string `json:"comment"`
+	TxHash      string `json:"tx_hash"`
+	UserQueryID string `json:"user_query_id"` // 用户提现请求id
 }
 
 func NewBlockScanner(
@@ -137,76 +135,43 @@ func (s *BlockScanner) pushNotifications(e BlockEvents) error {
 	if len(s.notificators) == 0 {
 		return nil
 	}
+	// 外部充值通知
 	for _, ei := range e.ExternalIncomes {
-		m, err := json.Marshal(ei)
-		if err != nil {
-			return err
+		owner := s.db.GetOwner(ei.To)
+		if owner == nil {
+			continue
 		}
-		log.Infof("external income: %s", m)
-	}
-	for _, ii := range e.InternalIncomes {
-		m, err := json.Marshal(ii)
-		if err != nil {
-			return err
+		notification := Notification{
+			Type:      "external_income",
+			Address:   owner.ToUserFormat(),
+			Timestamp: int64(ei.Utime),
+			Amount:    ei.Amount.String(),
+			Comment:   ei.Comment,
+			TxHash:    fmt.Sprintf("%x", ei.TxHash),
 		}
-		log.Infof("internal income: %s", m)
+		s.pushNotification(notification)
 	}
-	for _, wc := range e.SendingConfirmations {
-		m, err := json.Marshal(wc)
-		if err != nil {
-			return err
-		}
-		log.Infof("withdrawal confirmation: %s", m)
-	}
-	for _, wi := range e.InternalWithdrawals {
-		m, err := json.Marshal(wi)
-		if err != nil {
-			return err
-		}
-		log.Infof("internal withdrawal: %s", m)
-	}
+	// 外部提现通知
 	for _, ew := range e.ExternalWithdrawals {
-		m, err := json.Marshal(ew)
-		if err != nil {
-			return err
+		userQueryId, _ := s.db.GetWithdrawalRequestByHash(context.Background(), ew.TxHash)
+		if userQueryId != "" {
+			continue
 		}
-		log.Infof("external withdrawal: %s", m)
+		notification := Notification{
+			Type:        "external_withdrawal",
+			Address:     ew.To.ToUserFormat(),
+			Timestamp:   int64(ew.Utime),
+			Amount:      ew.Amount.String(),
+			Comment:     ew.Comment,
+			TxHash:      fmt.Sprintf("%x", ew.TxHash),
+			UserQueryID: userQueryId,
+		}
+		s.pushNotification(notification)
 	}
 	return nil
 }
 
-func (s *BlockScanner) pushNotification(
-	addr Address,
-	amount Coins,
-	timestamp uint32,
-	from []byte,
-	fromWorkchain *int32,
-	comment string,
-	txHash []byte,
-) error {
-	owner := s.db.GetOwner(addr)
-	if owner != nil {
-		addr = *owner
-	}
-	userID, ok := s.db.GetUserID(addr)
-	if !ok {
-		return fmt.Errorf("not found UserID for deposit %s", addr.ToUserFormat())
-	}
-	notification := incomeNotification{
-		Deposit:   addr.ToUserFormat(),
-		Amount:    amount.String(),
-		Timestamp: int64(timestamp),
-		Comment:   comment,
-		UserID:    userID,
-		TxHash:    fmt.Sprintf("%x", txHash),
-	}
-	if len(from) == 32 && fromWorkchain != nil {
-		// supports only std address
-		src := address.NewAddress(0, byte(*fromWorkchain), from)
-		src.SetTestnetOnly(config.Config.Testnet)
-		notification.Source = src.String()
-	}
-
+func (s *BlockScanner) pushNotification(notification Notification) error {
 	for _, n := range s.notificators {
 		err := n.Publish(notification)
 		if err != nil {

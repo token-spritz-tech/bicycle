@@ -1,15 +1,16 @@
 package db
 
 import (
-	"bicycle/audit"
-	"bicycle/config"
-	"bicycle/core"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
+
+	"bicycle/audit"
+	"bicycle/config"
+	"bicycle/core"
 
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v4"
@@ -112,6 +113,26 @@ func (c *Connection) SaveTonWallet(ctx context.Context, walletData core.WalletDa
 	}
 	c.addressBook.put(walletData.Address, core.AddressInfo{Type: walletData.Type, Owner: nil, UserID: walletData.UserID})
 	return nil
+}
+
+func (c *Connection) GetWithdrawalRequestByHash(ctx context.Context, hash []byte) (string, error) {
+	// 根据tx_hash获取提现请求ID
+	var queryId int
+	err := c.client.QueryRow(ctx, `
+		SELECT query_id FROM payments.external_withdrawals WHERE tx_hash = $1
+	`, hash).Scan(&queryId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	// 根据提现请求ID获取用户提现请求ID
+	var userQueryId string
+	err = c.client.QueryRow(ctx, `
+		SELECT user_query_id FROM payments.withdrawal_requests WHERE query_id = $1
+	`, queryId).Scan(&userQueryId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	return userQueryId, nil
 }
 
 func (c *Connection) GetJettonWallet(ctx context.Context, address core.Address) (*core.WalletData, bool, error) {

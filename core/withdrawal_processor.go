@@ -84,10 +84,6 @@ func (p *WithdrawalsProcessor) startWithdrawalsProcessor() {
 		}
 		time.Sleep(config.ExternalWithdrawalPeriod)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*25) // must be < ExternalWithdrawalPeriod
-		// err := p.makeColdWalletWithdrawals(ctx)
-		// if err != nil {
-		// 	log.Fatalf("make withdrawals to cold wallet error: %v\n", err)
-		// }
 		w, err := p.buildWithdrawalMessages(ctx)
 		if err != nil {
 			log.Fatalf("make withdrawal messages error: %v\n", err)

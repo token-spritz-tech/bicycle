@@ -1,13 +1,14 @@
 package core
 
 import (
-	"bicycle/config"
 	"context"
 	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math/big"
 	"time"
+
+	"bicycle/config"
 
 	"github.com/gofrs/uuid"
 	"github.com/shopspring/decimal"
@@ -334,6 +335,7 @@ type storage interface {
 		expiredAt time.Time, filled bool) error
 	GetServiceDepositWithdrawalTasks(ctx context.Context, limit int) ([]ServiceWithdrawalTask, error)
 	GetJettonWallet(ctx context.Context, address Address) (*WalletData, bool, error)
+	GetWithdrawalRequestByHash(ctx context.Context, hash []byte) (string, error)
 }
 
 type blockchain interface {
