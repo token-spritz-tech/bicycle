@@ -2,6 +2,5 @@ Seed: "fuel stem people arrest title loyal core cigar deposit little rotate reso
 DatabaseURI: "postgresql://bicycle:!Qq474603819@pgm-j6cjof86y8846aizbo.rwlb.rds.aliyuncs.com:5432/bicycle"
 APIPort: 10010
 NetworkConfigUrl: "https://dton.io/ls/1682591978/32EDE0089C69F78B06A7201A84E3DB84D2558206AB6C965335435C391F79C263/global.config.json"
-WebhookEndpoint: "https://webhook.site/cf570254-250b-44e8-a57f-611406c721aa"
-WalletClientUrl: "http://47.238.247.230:8083"
-AssetClientUrl: "http://47.238.247.230:8081"
+WalletClientUrl: "http://172.0.0.1:8083"
+AssetClientUrl: "http://172.0.0.1:8081"
